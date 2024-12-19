@@ -2,9 +2,9 @@
   "name": "edu_db_labs",
   "version": "2.1.0",
   "main": "index.js",
-  "description": "Databases labs template",
-  "repository": "https://github.com/Crosshell/bazovichki_db_labs",
-  "author": "Vladyslav Berdychevskyi <vladyslavberdychevskyi@gmail.com>",
+  "description": "Databases labs",
+  "repository": "https://github.com/meluni9/db-labs-mediacontent",
+  "author": "Melnyk Anna <melnika243@gmail.com>",
   "license": "ECL 2.0",
   "scripts": {
     "docs:dev": "npx vuepress dev docs",

@@ -15,7 +15,7 @@ module.exports = {
     }]
   ],
   port: 3030,
-  base: '/bazovichki_db_labs/',
+  base: '/db-labs-mediacontent/',
   theme: 'cool',
   // dest: 'dist',
   head: [
@@ -74,7 +74,7 @@ module.exports = {
 
     lastUpdated: 'Останнє оновлення', // string | boolean
       // Assumes GitHub. Can also be a full GitLab url.
-    repo: 'https://github.com/Crosshell/bazovichki_db_labs',
+    repo: 'https://github.com/meluni9/db-labs-mediacontent',
     // Customising the header label
     // Defaults to "GitHub"/"GitLab"/"Bitbucket" depending on `themeConfig.repo`
     repoLabel: 'Github',

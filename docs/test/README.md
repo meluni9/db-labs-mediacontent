@@ -62,7 +62,7 @@ ___
 
 ## EXCEPTION(User): UserNotFoundException
 
-<img src="./media/user_UserNotFoundException.png">
+<img src="./media/delete_user_part2.png">
 
 ## EXCEPTION(MediaContent): RequiredFieldsMissingException
 
@@ -70,7 +70,7 @@ ___
 
 ## EXCEPTION(MediaContent): MediaContentNotFoundException
 
-<img src="./media/content_MediaContentNotFoundException.png">
+<img src="./media/delete_content_part2.png">
 
 ## EXCEPTION(MediaContent): ContentIdExistsException
 

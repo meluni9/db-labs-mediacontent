@@ -753,7 +753,7 @@ async def read_mediacontent(db: Session = Depends(get_db)):
 async def read_mediacontent_by_id(mediacontent_id: int, db: Session = Depends(get_db)):
     db_mediacontent = db.query(MediaContent).filter(mediacontent_id == MediaContent.id).first()
     if db_mediacontent is None:
-        raise HTTPException(status_code=404, detail="The media content with the specified ID was not found")
+        raise HTTPException(status_code=404, detail="MediaContentNotFoundException")
     return db_mediacontent
 
 
@@ -761,11 +761,14 @@ async def read_mediacontent_by_id(mediacontent_id: int, db: Session = Depends(ge
 async def create_mediacontent(mediacontent: MediaContentCreate, db: Session = Depends(get_db)):
     id_mediacontent = db.query(MediaContent).filter(mediacontent.id == MediaContent.id).first()
     if id_mediacontent:
-        raise HTTPException(status_code=400, detail="The media content with this ID already exists")
+        raise HTTPException(status_code=400, detail="ContentIdExistsExceptions")
 
     id_user = db.query(User).filter(mediacontent.user_id == User.id).first()
     if not id_user:
-        raise HTTPException(status_code=400, detail="The user with the specified ID was not found")
+        raise HTTPException(status_code=404, detail="UserNotFoundException")
+
+    if not mediacontent.title or not mediacontent.body or not mediacontent.content_type or not mediacontent.user_id:
+        raise HTTPException(status_code=400, detail="RequiredFieldsMissingException")
 
     db_mediacontent = MediaContent(**mediacontent.dict())
     db.add(db_mediacontent)
@@ -775,34 +778,11 @@ async def create_mediacontent(mediacontent: MediaContentCreate, db: Session = De
     return db_mediacontent
 
 
-@router.put("/mediacontent/{mediacontent_id}", response_model=MediaContentResponse)
-async def update_mediacontent(mediacontent_id: int, mediacontent: MediaContentCreate, db: Session = Depends(get_db)):
-    db_mediacontent = db.query(MediaContent).filter(mediacontent_id == MediaContent.id).first()
-    if db_mediacontent is None:
-        raise HTTPException(status_code=404, detail="The media content with the specified ID was not found")
-
-    id_mediacontent = db.query(MediaContent).filter(mediacontent.id == MediaContent.id, MediaContent.id != mediacontent_id).first()
-    if id_mediacontent:
-        raise HTTPException(status_code=400, detail="The media content with this ID already exists")
-
-    if mediacontent.user_id:
-        id_user = db.query(User).filter(mediacontent.user_id == User.id).first()
-        if not id_user:
-            raise HTTPException(status_code=400, detail="The user with the specified ID was not found")
-
-    for key, value in mediacontent.dict().items():
-        setattr(db_mediacontent, key, value)
-
-    db.commit()
-    db.refresh(db_mediacontent)
-    return db_mediacontent
-
-
 @router.delete("/mediacontent/{mediacontent_id}", response_model=MediaContentResponse)
 async def delete_mediacontent(mediacontent_id: int, db: Session = Depends(get_db)):
     db_mediacontent = db.query(MediaContent).filter(mediacontent_id == MediaContent.id).first()
     if db_mediacontent is None:
-        raise HTTPException(status_code=404, detail="The media content with the specified ID was not found")
+        raise HTTPException(status_code=404, detail="MediaContentNotFoundException")
 
     db.delete(db_mediacontent)
     db.commit()
@@ -813,19 +793,19 @@ async def delete_mediacontent(mediacontent_id: int, db: Session = Depends(get_db
 async def patch_mediacontent(mediacontent_id: int, mediacontent: MediaContentPatch, db: Session = Depends(get_db)):
     db_mediacontent = db.query(MediaContent).filter(mediacontent_id == MediaContent.id).first()
     if db_mediacontent is None:
-        raise HTTPException(status_code=404, detail="The media content with the specified ID was not found")
+        raise HTTPException(status_code=404, detail="MediaContentNotFoundException")
 
     updated_fields = mediacontent.dict(exclude_unset=True)
 
     if 'id' in updated_fields and updated_fields['id'] != mediacontent_id:
         id_mediacontent = db.query(MediaContent).filter(MediaContent.id == updated_fields['id']).first()
         if id_mediacontent:
-            raise HTTPException(status_code=400, detail="The media content with this ID already exists")
+            raise HTTPException(status_code=400, detail="ContentIdExistsException")
 
     if 'user_id' in updated_fields:
         user = db.query(User).filter(User.id == updated_fields['user_id']).first()
         if not user:
-            raise HTTPException(status_code=400, detail="The user with the specified ID was not found")
+            raise HTTPException(status_code=400, detail="UserNotFoundException")
 
     for key, value in updated_fields.items():
         setattr(db_mediacontent, key, value)
@@ -844,7 +824,7 @@ async def read_user(skip: int = 0, limit: int = 10, db: Session = Depends(get_db
 async def read_user_by_id(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(user_id == User.id).first()
     if db_user is None:
-        raise HTTPException(status_code=404, detail="The user with the specified ID was not found")
+        raise HTTPException(status_code=404, detail="UserNotFoundException")
     return db_user
 
 
@@ -852,7 +832,10 @@ async def read_user_by_id(user_id: int, db: Session = Depends(get_db)):
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(user.id == User.id).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="The user with this ID already exists")
+        raise HTTPException(status_code=400, detail="AlreadyRegisteredException")
+
+    if not user.first_name or not user.last_name or not user.email or not user.password:
+        raise HTTPException(status_code=400, detail="DataMissingException")
 
     db_user = User(**user.dict())
     db.add(db_user)
@@ -862,36 +845,20 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 
-@router.put("/user/{user_id}", response_model=UserResponse)
-async def update_user(user_id: int, user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(user_id == User.id).first()
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="The user with the specified ID was not found")
-
-    id_mediacontent = db.query(MediaContent).filter(user.id == User.id, user_id != User.id).first()
-    if id_mediacontent:
-        raise HTTPException(status_code=400, detail="The user with this ID already exists")
-
-    for key, value in user.dict().items():
-        setattr(db_user, key, value)
-
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-
 @router.delete("/user/{user_id}", response_model=UserResponse)
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(user_id == User.id).first()
     if db_user is None:
-        raise HTTPException(status_code=404, detail="The user with the specified ID was not found")
+        raise HTTPException(status_code=404, detail="UserNotFoundException")
 
-    related_mediacontent = db.query(MediaContent).filter(user_id == MediaContent.user_id).first()
+    related_mediacontent = db.query(MediaContent).filter(user_id == MediaContent.user_id).all()
     if related_mediacontent:
-        raise HTTPException(status_code=403, detail="Cannot delete user with associated media content")
+        for media in related_mediacontent:
+            db.delete(media)
 
     db.delete(db_user)
     db.commit()
+
     return db_user
 
 
@@ -899,14 +866,14 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
 async def patch_user(user_id: int, user: UserPatch, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(user_id == User.id).first()
     if db_user is None:
-        raise HTTPException(status_code=404, detail="The user with the specified ID was not found")
+        raise HTTPException(status_code=404, detail="UserNotFoundException")
 
     updated_mediacontent = user.dict(exclude_unset=True)
 
     if 'id' in updated_mediacontent and updated_mediacontent['id'] != user_id:
         id_user = db.query(User).filter(User.id == updated_mediacontent['id']).first()
         if id_user:
-            raise HTTPException(status_code=400, detail="The user with this ID already exists")
+            raise HTTPException(status_code=400, detail="AlreadyRegisteredException")
 
     for key, value in updated_mediacontent.items():
         setattr(db_user, key, value)
